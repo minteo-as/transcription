@@ -1,66 +1,150 @@
-# Transskribering af juraforelæsninger med whisper.cpp
+# Transskribering af optagelser med whisper.cpp på Mac
 
-Denne guide beskriver, hvordan du sætter [whisper.cpp](https://github.com/ggml-org/whisper.cpp) op på din egen Mac og transskriberer optagelser af forelæsninger med `transcribe_chunks.sh`.
+Scripts og en guide til at transskribere lange lydoptagelser (forelæsninger, møder, interviews) lokalt på en Mac med Apple Silicon. Alt kører på din egen maskine med [whisper.cpp](https://github.com/ggml-org/whisper.cpp), så ingen lyd forlader computeren.
 
-Opsætningen:
+Repoet indeholder tre scripts:
+
+| Script | Gør |
+| --- | --- |
+| `install_whisper.sh` | Bygger og installerer whisper.cpp, henter modellerne og laver CoreML-encoderen. |
+| `update_whisper.sh` | Opdaterer whisper.cpp til nyeste udgivelse, når der kommer en. |
+| `transcribe_chunks.sh` | Transskriberer en lydfil til en tekstfil med tidsstempler. |
+
+## Sådan virker det
 
 - **whisper.cpp** bygges fra kildekoden med CoreML (Apple Neural Engine) og Metal (GPU) og installeres i `/usr/local`.
-- **Modellen** er `large-v3-turbo`, som er hurtig og god til dansk.
-- **VAD** (Silero) springer stilhed over, så Whisper ikke "hallucinerer" tekst i pauser.
-- **`transcribe_chunks.sh`** deler lydfilen op i bidder på 5 minutter, transskriberer dem én ad gangen og samler resultatet i én tekstfil med tidsstempler.
+- **Modellen** er `large-v3-turbo`, som er hurtig og giver gode resultater på dansk og andre europæiske sprog.
+- **VAD** (Silero voice activity detection) springer stilhed over, så Whisper ikke "hallucinerer" tekst i pauser.
+- **`transcribe_chunks.sh`** deler lydfilen op i bidder på 5 minutter, transskriberer dem én ad gangen og samler resultatet i én tekstfil. Opdelingen gør, at en lang optagelse ikke fylder hele hukommelsen, og at du kan følge med i fremdriften undervejs.
 
-Alle modeller lægges i `~/models/whisper/`.
+## Forudsætninger
+
+- En Mac med Apple Silicon (M1 eller nyere).
+- **Xcode** fra App Store. Den fulde Xcode er nødvendig, fordi Command Line Tools ikke indeholder `coremlc`, som bruges til at lave CoreML-encoderen. Åbn Xcode én gang og accepter licensen, og kør derefter:
+
+  ```sh
+  sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+  xcrun --find coremlc   # skal udskrive en sti
+  ```
+
+- **Homebrew** fra [brew.sh](https://brew.sh). Installationsscriptet henter selv `git`, `cmake`, `ffmpeg` og `python@3.11` via Homebrew.
 
 ## Hurtig start
 
-Når forudsætningerne i trin 1 er på plads, klarer `install_whisper.sh` trin 2–4:
-
 ```sh
+git clone https://github.com/minteo-as/transcription.git
+cd transcription
 ./install_whisper.sh
 ```
 
-Opdater senere til en ny udgivelse med:
+Scriptet spørger efter dit password én gang, når whisper.cpp installeres i `/usr/local`. Første kørsel tager typisk 15–30 minutter, mest fordi modellen på ca. 1,6 GB skal hentes og CoreML-encoderen skal genereres.
+
+Scriptet kan køres igen uden problemer. Trin, der allerede er gjort, springes over.
+
+Transskriber derefter en optagelse:
+
+```sh
+./transcribe_chunks.sh optagelse.m4a optagelse.txt ~/models/whisper/ggml-large-v3-turbo.bin 300 da "Kort beskrivelse af optagelsen med centrale fagudtryk og navne."
+```
+
+## Transskribering
+
+```sh
+./transcribe_chunks.sh <lydfil> <output.txt> <model.bin> [sekunder_pr_bid] [sprog] [prompt]
+```
+
+| Argument | Standard | Beskrivelse |
+| --- | --- | --- |
+| `lydfil` | | Alle formater, som `ffmpeg` kan læse: m4a, mp3, wav, mp4 osv. |
+| `output.txt` | | Den færdige transskription. Overskrives, hvis den findes. |
+| `model.bin` | | Stien til ggml-modellen, fx `~/models/whisper/ggml-large-v3-turbo.bin`. |
+| `sekunder_pr_bid` | `300` | Længden på hver bid. 5 minutter er et godt kompromis. |
+| `sprog` | `auto` | Sprogkode som `da`, `en` eller `de`. Angiv altid sproget, hvis du kender det. Med `auto` ignoreres prompten. |
+| `prompt` | tom | En kort tekst, der hjælper modellen med stavning af fagudtryk og navne. Se nedenfor. |
+
+Output ser sådan ud, med en overskrift for hver bid:
+
+```
+===== CHUNK 1 | 00:00:00 -> 00:05:00 =====
+...tekst...
+
+===== CHUNK 2 | 00:05:00 -> 00:10:00 =====
+...tekst...
+```
+
+Mellemfilerne (wav-bidder og tekst pr. bid) gemmes i `<lydfil>_chunks_work/` ved siden af lydfilen og kan slettes bagefter.
+
+### Skriv en god prompt
+
+Whisper bruger prompten som kontekst for, hvad der sandsynligvis bliver sagt. Det forbedrer stavningen af specialiserede ord markant, især ord, der sjældent optræder i almindelig tale. En god prompt er en eller to sætninger, der nævner:
+
+- emnet for optagelsen
+- fagudtryk, forkortelser og navne, der sandsynligvis bliver sagt
+- hvordan optagelsen foregår, fx at der stilles spørgsmål undervejs
+
+Eksempel fra en forelæsning:
+
+```
+Forelæsning i rekonstruktions- og insolvensprocesret. Emner omfatter konkursloven, rekonstruktionsbehandling, tvangsakkord, omstødelse og fristdagen. Studerende stiller spørgsmål undervejs.
+```
+
+Eksempel fra et møde:
+
+```
+Statusmøde i udviklingsteamet om release 2.4. Deltagere: Mette, Jonas og Sara. Der tales om Kubernetes, PostgreSQL og CI-pipelinen.
+```
+
+Skriv en ny prompt til hver optagelse. Har du slides eller en dagsorden, er det et godt udgangspunkt.
+
+## Hvor filerne ligger
+
+Scriptene bruger disse stier som standard. Alle kan ændres med en miljøvariabel, fx `MODELS_DIR=/Volumes/Data/whisper ./install_whisper.sh`.
+
+| Variabel | Standard | Indhold |
+| --- | --- | --- |
+| `WHISPER_DIR` | `~/Downloads/whisper.cpp` | Kildekoden til whisper.cpp. Bruges af install og update. |
+| `MODELS_DIR` | `~/models/whisper` | Modeller og CoreML-encoder. |
+| `COREML_VENV` | `~/whisper-coreml311` | Python-miljøet, der bruges til at generere CoreML-encoderen. |
+| `MODEL` | `large-v3-turbo` | Hvilken Whisper-model der hentes. |
+| `VAD_MODEL` | `<samme mappe som model.bin>/ggml-silero-v6.2.0.bin` | VAD-modellen, som `transcribe_chunks.sh` bruger. |
+
+Efter installationen indeholder `~/models/whisper/`:
+
+```
+ggml-large-v3-turbo.bin              # selve modellen (ca. 1,6 GB)
+ggml-large-v3-turbo-encoder.mlmodelc/  # CoreML-encoder til Neural Engine
+ggml-silero-v6.2.0.bin               # VAD-model
+```
+
+## Opdatering
 
 ```sh
 ./update_whisper.sh
 ```
 
-Begge scripts kan køres igen uden problemer, og trin, der allerede er gjort, springes over. Resten af guiden beskriver, hvad scripts gør, hvis du vil gøre det manuelt.
+Scriptet sammenligner den installerede version med den seneste udgivelse på GitHub og bygger kun, hvis der er en nyere. Med `--force` bygges og installeres der igen uanset version. Modellerne og CoreML-encoderen genbruges.
 
----
+## Fejlfinding
 
-## 1. Forudsætninger
+**Første transskribering hænger i flere minutter.** Det er normalt. macOS kompilerer CoreML-modellen til Neural Engine første gang, den bruges. Efterfølgende kørsler starter på få sekunder.
 
-Du skal bruge en Mac med Apple Silicon (M1 eller nyere).
+**`failed to load Core ML model`.** whisper.cpp er bygget med CoreML og kræver derfor, at encoderen `ggml-<model>-encoder.mlmodelc/` ligger ved siden af modelfilen. Kør `./install_whisper.sh` igen, så laver den encoderen, hvis den mangler.
 
-1. **Xcode** fra App Store. Den fulde Xcode er nødvendig, fordi Command Line Tools ikke indeholder `coremlc`, som skal bruges i trin 4. Åbn Xcode én gang, og accepter licensen. Kør derefter:
+**`coremlc ikke fundet`.** Command Line Tools er ikke nok. Installer den fulde Xcode, åbn den én gang, og kør kommandoen under Forudsætninger.
 
-   ```sh
-   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-   xcrun --find coremlc   # skal udskrive en sti
-   ```
+**Python-fejl ved generering af CoreML-encoderen.** Encoderen laves med `torch` og `coremltools`, som ofte ikke virker med de nyeste Python-versioner. Scriptet bruger derfor Python 3.11 fra Homebrew i et separat miljø, som ikke påvirker din øvrige Python-installation.
 
-2. **Homebrew** fra [brew.sh](https://brew.sh), og derefter værktøjerne:
+**Tekst i pauser eller gentagne sætninger.** Tjek, at VAD-modellen findes, og at sproget er angivet. Prøv eventuelt kortere bidder, fx `120` sekunder.
 
-   ```sh
-   brew install git cmake ffmpeg python@3.11
-   ```
+## Manuel opsætning
 
-   Python 3.11 bruges kun til at lave CoreML-modellen i trin 4. Nyere Python-versioner virker ofte ikke med `torch` og `coremltools`.
+Det her er, hvad `install_whisper.sh` gør, hvis du hellere vil gøre det selv.
 
----
-
-## 2. Hent og byg whisper.cpp
+### 1. Hent og byg whisper.cpp
 
 ```sh
-cd ~/Downloads
 git clone https://github.com/ggml-org/whisper.cpp.git
 cd whisper.cpp
-```
-
-Skift til den nyeste udgivelse i stedet for udviklingsgrenen `master`:
-
-```sh
 git fetch --tags
 git tag --sort=-v:refname | head -3   # vis de nyeste udgivelser
 git checkout v1.9.5                   # erstat med den nyeste
@@ -78,19 +162,14 @@ cmake -B build \
 
 cmake --build build -j --config Release
 sudo cmake --install build
-```
-
-Tjek, at det virker:
-
-```sh
 whisper-cli --version   # fx "whisper.cpp version: 1.9.5"
 ```
 
----
+Vil du springe CoreML over, så fjern `-DWHISPER_COREML=1` og spring trin 3 over. Transskriberingen bliver lidt langsommere, men kører stadig på GPU'en via Metal.
 
-## 3. Hent modellerne
+### 2. Hent modellerne
 
-Kør fra `whisper.cpp`-mappen:
+Fra `whisper.cpp`-mappen:
 
 ```sh
 mkdir -p ~/models/whisper
@@ -98,23 +177,18 @@ mkdir -p ~/models/whisper
 ./models/download-vad-model.sh silero-v6.2.0 ~/models/whisper
 ```
 
-Resultatet er `ggml-large-v3-turbo.bin` (ca. 1,6 GB) og `ggml-silero-v6.2.0.bin` i `~/models/whisper/`.
+### 3. Lav CoreML-encoderen
 
----
-
-## 4. Lav CoreML-encoderen
-
-whisper.cpp er bygget med CoreML. Derfor **skal** der ligge en CoreML-encoder ved siden af modellen, ellers stopper `whisper-cli` med fejlen `failed to load Core ML model`. Encoderen skal laves én gang pr. model.
-
-Opret et separat Python-miljø, og installer konverteringsværktøjerne:
+Encoderen skal laves én gang pr. model. Opret et Python 3.11-miljø med konverteringsværktøjerne:
 
 ```sh
+brew install python@3.11
 python3.11 -m venv ~/whisper-coreml311
 source ~/whisper-coreml311/bin/activate
-pip install ane_transformers openai-whisper coremltools
+pip install -r models/requirements-coreml.txt   # fra whisper.cpp-mappen
 ```
 
-Generer encoderen fra `whisper.cpp`-mappen, og kopier den over til modellen. Det tager et stykke tid:
+Generer encoderen fra `whisper.cpp`-mappen, og kopier den over til modellen:
 
 ```sh
 ./models/generate-coreml-model.sh large-v3-turbo
@@ -122,62 +196,15 @@ cp -R models/ggml-large-v3-turbo-encoder.mlmodelc ~/models/whisper/
 deactivate
 ```
 
-`~/models/whisper/` skal nu indeholde:
+### 4. Opdater manuelt
 
-```
-ggml-large-v3-turbo.bin
-ggml-large-v3-turbo-encoder.mlmodelc/
-ggml-silero-v6.2.0.bin
-```
-
-> Den første transskribering efter opsætningen kan tage flere minutter at gå i gang, fordi macOS kompilerer CoreML-modellen til Neural Engine. Efterfølgende kørsler starter hurtigt.
-
-> Vil du springe CoreML over, så fjern `-DWHISPER_COREML=1` i trin 2 og spring dette trin over. Transskriberingen bliver lidt langsommere, men kører stadig på GPU'en via Metal.
-
----
-
-## 5. Transskriber en forelæsning
-
-Kør scriptet fra `JuraLyd`-mappen. Læg hver forelæsning i sin egen mappe (fx `26-09-2026/`).
-
-```sh
-./transcribe_chunks.sh <lydfil> <output.txt> <model.bin> [sekunder_pr_bid] [sprog] [prompt]
-```
-
-Eksempel:
-
-```sh
-./transcribe_chunks.sh \
-  "26-09-2026/26-09.26 Rekonstruktions og Insolvensprocesret.m4a" \
-  26-09-2026/output.txt \
-  ~/models/whisper/ggml-large-v3-turbo.bin \
-  300 da \
-  "Forelæsning i rekonstruktions- og insolvensprocesret ved SDU. Emner omfatter konkursloven, rekonstruktionsbehandling, tvangsakkord, omstødelse og fristdagen."
-```
-
-- **`sekunder_pr_bid`** er som standard `300`, altså 5 minutter.
-- **`sprog`**: angiv altid `da`. Standarden `auto` ignorerer prompten.
-- **`prompt`** er en kort beskrivelse af forelæsningen med fagbegreber, lovforkortelser (KL, TL, KSL …) og navne på undervisere. Det forbedrer stavningen af juridiske termer markant. Skriv en ny prompt til hver forelæsning, fx ud fra slides.
-
-Scriptet kræver, at `ffmpeg` og `whisper-cli` ligger i `PATH`. VAD-modellen skal ligge på stien `~/models/whisper/ggml-silero-v6.2.0.bin`.
-
-Den færdige transskription skrives til `output.txt` med en overskrift for hver bid (`===== CHUNK 3 | 00:10:00 -> 00:15:00 =====`). Mellemfilerne (wav-bidder og tekst pr. bid) gemmes i `<filnavn>_chunks_work/` ved siden af lydfilen og kan slettes bagefter.
-
----
-
-## Opdatering af whisper.cpp
-
-Kør `./update_whisper.sh`. Scriptet sammenligner den installerede version med den seneste udgivelse og opdaterer kun, hvis der er en nyere. Med `--force` bygges og installeres der igen uanset version.
-
-Manuelt fra `~/Downloads/whisper.cpp`:
+Fra `whisper.cpp`-mappen:
 
 ```sh
 git fetch --tags
-git tag --sort=-v:refname | head -3   # find den nyeste udgivelse
-git checkout v1.9.6                   # erstat med den nyeste
+git checkout v1.9.6   # erstat med den nyeste
 cmake --build build -j --config Release
 sudo cmake --install build
-whisper-cli --version
 ```
 
-Indstillingerne fra trin 2 huskes i `build`-mappen, så du behøver ikke køre `cmake -B build …` igen. Modellerne og CoreML-encoderen skal heller ikke laves igen.
+Indstillingerne huskes i `build`-mappen, så `cmake -B build …` behøver ikke køres igen. Modellerne og CoreML-encoderen skal heller ikke laves igen.

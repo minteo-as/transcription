@@ -99,9 +99,12 @@ else
     if [[ ! -x "$COREML_VENV/bin/python3" ]]; then
       echo "Opretter Python-miljø i $COREML_VENV..."
       "$PYTHON311" -m venv "$COREML_VENV"
-      "$COREML_VENV/bin/pip" install --upgrade pip
-      "$COREML_VENV/bin/pip" install ane_transformers openai-whisper coremltools
     fi
+    # Køres hver gang, så et afbrudt pip-install ikke efterlader et halvfærdigt miljø.
+    # Pakkelisten vedligeholdes af whisper.cpp selv.
+    echo "Installerer Python-pakker fra models/requirements-coreml.txt..."
+    "$COREML_VENV/bin/pip" install --quiet --upgrade pip
+    "$COREML_VENV/bin/pip" install --quiet -r models/requirements-coreml.txt
     echo "Genererer encoder (det tager et stykke tid)..."
     PATH="$COREML_VENV/bin:$PATH" ./models/generate-coreml-model.sh "$MODEL"
   fi
