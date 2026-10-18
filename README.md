@@ -74,6 +74,30 @@ Output ser sådan ud, med en overskrift for hver bid:
 
 Mellemfilerne (wav-bidder og tekst pr. bid) gemmes i `<lydfil>_chunks_work/` ved siden af lydfilen og kan slettes bagefter.
 
+### Lyd fra en video
+
+Scriptet kan læse videofiler direkte (mp4, mov, mkv osv.), fordi `ffmpeg` selv trækker lydsporet ud. Du behøver altså ikke konvertere først. Vil du alligevel have en ren lydfil, fx fordi videoen fylder mange gigabyte eller skal deles, er der to veje:
+
+**Med QuickTime Player** (følger med macOS):
+
+1. Åbn videoen i QuickTime Player.
+2. Vælg **Fil → Eksporter som → Kun lyd**.
+3. Gem filen. Resultatet er en `.m4a`-fil, som scriptet kan bruge direkte.
+
+**Med ffmpeg** i Terminal, som kopierer lydsporet uden at genkode det og derfor er færdig på få sekunder:
+
+```sh
+ffmpeg -i video.mp4 -vn -c:a copy lyd.m4a
+```
+
+Brokker `ffmpeg` sig over formatet, fx ved en `.mkv`-fil med et lydspor, som ikke kan ligge i `.m4a`, så lad den genkode i stedet:
+
+```sh
+ffmpeg -i video.mkv -vn -c:a aac -b:a 128k lyd.m4a
+```
+
+Skærmoptagelser fra QuickTime, Zoom og Teams gemmes typisk som `.mov` eller `.mp4` og kan bruges på samme måde.
+
 ### Skriv en god prompt
 
 Whisper bruger prompten som kontekst for, hvad der sandsynligvis bliver sagt. Det forbedrer stavningen af specialiserede ord markant, især ord, der sjældent optræder i almindelig tale. En god prompt er en eller to sætninger, der nævner:
