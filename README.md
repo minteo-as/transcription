@@ -96,6 +96,35 @@ Statusmøde i udviklingsteamet om release 2.4. Deltagere: Mette, Jonas og Sara. 
 
 Skriv en ny prompt til hver optagelse. Har du slides eller en dagsorden, er det et godt udgangspunkt.
 
+### Lad en AI skrive prompten ud fra slides
+
+Det hurtigste er at lade Claude, ChatGPT eller en anden AI-assistent trække fagudtrykkene ud af slides, en dagsorden eller et pensum. Sådan gør du:
+
+1. Vedhæft slides til samtalen (PowerPoint og PDF kan uploades direkte), eller kopier teksten ind.
+2. Indsæt instruktionen nedenfor.
+3. Kopier svaret ind som sidste argument til `transcribe_chunks.sh`.
+
+Instruktion til AI-assistenten:
+
+```
+Jeg skal transskribere en optagelse med Whisper og har brug for en kontekstprompt, der hjælper modellen med at stave fagudtryk og navne rigtigt. Vedhæftet er slides fra optagelsen.
+
+Skriv en prompt på dansk på højst 3-4 sætninger og under 150 ord, som:
+- starter med en sætning om, hvad optagelsen handler om
+- nævner de 10-20 vigtigste fagudtryk, forkortelser og egennavne fra slides, stavet præcis som de skal stå i transskriptionen
+- slutter med en sætning om formen, fx at det er en forelæsning med spørgsmål fra salen
+
+Skriv prompten som almindelig løbende tekst uden punktopstilling, overskrifter eller forklaringer. Svar kun med selve prompten.
+```
+
+Tjek svaret, før du bruger det:
+
+- **Hold den kort.** Whisper læser kun de sidste ca. 220 tokens af prompten, hvilket svarer til omkring 150 danske ord. Alt derudover ignoreres.
+- **Fjern det, der ikke bliver sagt.** Sidetal, kildehenvisninger og lange lovcitater fylder uden at hjælpe.
+- **Tilføj det, AI'en ikke kan vide.** Navne på underviser og deltagere, øgenavne for begreber, og ord der ofte bliver stavet forkert.
+
+Bruger du samme AI-samtale til flere optagelser i samme fag, kan du bede den genbruge de faste fagudtryk og kun tilføje de nye emner.
+
 ## Hvor filerne ligger
 
 Scriptene bruger disse stier som standard. Alle kan ændres med en miljøvariabel, fx `MODELS_DIR=/Volumes/Data/whisper ./install_whisper.sh`.
