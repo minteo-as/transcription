@@ -27,7 +27,20 @@ Repoet indeholder tre scripts:
   xcrun --find coremlc   # skal udskrive en sti
   ```
 
-- **Homebrew** fra [brew.sh](https://brew.sh). Installationsscriptet henter selv `git`, `cmake`, `ffmpeg` og `python@3.11` via Homebrew.
+- **Homebrew**, pakkehåndteringen til macOS. Tjek, om den allerede er installeret, med `brew --version`. Hvis ikke, så kør kommandoen fra [brew.sh](https://brew.sh):
+
+  ```sh
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  ```
+
+  Installationen spørger efter dit password og slutter med et afsnit kaldet "Next steps", som beder dig køre to kommandoer, der føjer Homebrew til `PATH`. Det er nødvendigt på Apple Silicon, ellers virker `brew` ikke i nye terminalvinduer:
+
+  ```sh
+  echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+  ```
+
+  Åbn et nyt terminalvindue, og tjek med `brew --version`. Installationsscriptet henter selv `git`, `cmake`, `ffmpeg` og `python@3.11` via Homebrew.
 
 ## Hurtig start
 
