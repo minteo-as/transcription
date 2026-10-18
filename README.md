@@ -149,6 +149,36 @@ Tjek svaret, før du bruger det:
 
 Bruger du samme AI-samtale til flere optagelser i samme fag, kan du bede den genbruge de faste fagudtryk og kun tilføje de nye emner.
 
+## Fra transskription til noter
+
+Transskriptionen er rå tale med fyldord, gentagelser og enkelte stavefejl. Sammen med slides er den til gengæld et godt grundlag for, at en AI-assistent kan skrive strukturerede noter. Slides giver strukturen og de korrekte begreber, transskriptionen giver forklaringerne, eksemplerne og det, der blev sagt mellem linjerne.
+
+1. Vedhæft både `output.txt` og slides til samtalen.
+2. Indsæt instruktionen nedenfor, og tilpas listen over, hvad noterne skal indeholde.
+3. Læs noterne igennem med slides ved siden af, og bed om rettelser, hvor noget mangler eller er forkert.
+
+Instruktion til AI-assistenten:
+
+```
+Vedhæftet er en transskription af en optagelse og de slides, der blev brugt. Transskriptionen er automatisk genereret og kan indeholde stavefejl og fyldord. Slides er den pålidelige kilde til begreber og struktur.
+
+Skriv noter på dansk, der følger slides' rækkefølge og overskrifter. For hvert emne:
+- forklar begrebet med egne ord, som det blev forklaret i optagelsen
+- medtag de eksempler, der blev givet mundtligt, også dem der ikke står på slides
+- noter, hvad underviseren fremhævede som vigtigt, eller som ofte misforstås
+- medtag spørgsmål fra deltagerne og svarene på dem, hvis de tilføjer noget
+
+Markér med [uklart] de steder, hvor transskriptionen er for utydelig til at være sikker. Tilføj ikke viden, som hverken findes i slides eller transskriptionen. Afslut med en liste over begreber, der blev nævnt i optagelsen, men ikke står på slides.
+```
+
+Tips:
+
+- **Hold tidsstemplerne.** Hver bid i `output.txt` starter med `===== CHUNK n | 00:10:00 -> 00:15:00 =====`. Bed AI'en henvise til dem, så du hurtigt kan finde stedet i optagelsen, hvis noget skal tjekkes.
+- **Del lange optagelser op.** En optagelse på tre timer giver typisk 20.000–30.000 ord, hvilket kan være mere, end én samtale håndterer godt. Del `output.txt` ved chunk-overskrifterne, fx én time ad gangen, og bed til sidst om en samlet oversigt.
+- **Bed om flere formater.** Når noterne er på plads, kan samme samtale lave et resumé på en side, flashcards med spørgsmål og svar, eller en liste over øvelsesspørgsmål.
+- **Brug samme samtale gennem et forløb.** Vedhæfter du noterne fra forrige gang, kan AI'en henvise tilbage til dem og markere, hvor de nye emner bygger videre på de gamle.
+- **Stol på slides ved uenighed.** Ser du en forskel mellem noterne og slides, er transskriptionen oftest skyld i det. Slå efter i optagelsen ved tidsstemplet, før du retter.
+
 ## Hvor filerne ligger
 
 Scriptene bruger disse stier som standard. Alle kan ændres med en miljøvariabel, fx `MODELS_DIR=/Volumes/Data/whisper ./install_whisper.sh`.
