@@ -154,13 +154,13 @@ Skriv en prompt på dansk på højst 3-4 sætninger og under 150 ord, som:
 Skriv prompten som almindelig løbende tekst uden punktopstilling, overskrifter eller forklaringer. Svar kun med selve prompten.
 ```
 
-Tjek svaret, før du bruger det:
+Læs svaret igennem, før du bruger det. Tre ting går ofte galt:
 
-- **Hold den kort.** Whisper læser kun de sidste ca. 220 tokens af prompten, hvilket svarer til omkring 150 danske ord. Alt derudover ignoreres.
-- **Fjern det, der ikke bliver sagt.** Sidetal, kildehenvisninger og lange lovcitater fylder uden at hjælpe.
-- **Tilføj det, AI'en ikke kan vide.** Navne på underviser og deltagere, øgenavne for begreber, og ord der ofte bliver stavet forkert.
+- **Prompten er for lang.** Whisper bruger kun slutningen af prompten, omkring 150 danske ord. Er den længere, bliver begyndelsen smidt væk, og så er det tilfældigt, hvilke fagudtryk der kommer med. Slet selv de mindst vigtige ord, til den er under 150.
+- **Der står ting, som ingen siger højt.** AI'en tager gerne sidetal, litteraturhenvisninger og lange citater med fra slides. De hjælper ikke, for de bliver ikke sagt i optagelsen. Slet dem, så der er plads til ord, der faktisk bliver sagt.
+- **Navne mangler.** AI'en kender kun det, der står på slides. Tilføj selv underviserens navn, navne på deltagere, og ord du har set stavet forkert i tidligere transskriptioner.
 
-Bruger du samme AI-samtale til flere optagelser i samme fag, kan du bede den genbruge de faste fagudtryk og kun tilføje de nye emner.
+Har du flere optagelser i samme fag, så bliv i samme AI-samtale. Næste gang behøver du kun vedhæfte de nye slides og skrive "lav en tilsvarende prompt til denne optagelse".
 
 ## Fra transskription til noter
 
@@ -184,13 +184,17 @@ Skriv noter på dansk, der følger slides' rækkefølge og overskrifter. For hve
 Markér med [uklart] de steder, hvor transskriptionen er for utydelig til at være sikker. Tilføj ikke viden, som hverken findes i slides eller transskriptionen. Afslut med en liste over begreber, der blev nævnt i optagelsen, men ikke står på slides.
 ```
 
-Tips:
+### Når noterne ikke bliver gode nok
 
-- **Hold tidsstemplerne.** Hver bid i `output.txt` starter med `===== CHUNK n | 00:10:00 -> 00:15:00 =====`. Bed AI'en henvise til dem, så du hurtigt kan finde stedet i optagelsen, hvis noget skal tjekkes.
-- **Del lange optagelser op.** En optagelse på tre timer giver typisk 20.000–30.000 ord, hvilket kan være mere, end én samtale håndterer godt. Del `output.txt` ved chunk-overskrifterne, fx én time ad gangen, og bed til sidst om en samlet oversigt.
-- **Bed om flere formater.** Når noterne er på plads, kan samme samtale lave et resumé på en side, flashcards med spørgsmål og svar, eller en liste over øvelsesspørgsmål.
-- **Brug samme samtale gennem et forløb.** Vedhæfter du noterne fra forrige gang, kan AI'en henvise tilbage til dem og markere, hvor de nye emner bygger videre på de gamle.
-- **Stol på slides ved uenighed.** Ser du en forskel mellem noterne og slides, er transskriptionen oftest skyld i det. Slå efter i optagelsen ved tidsstemplet, før du retter.
+**Du vil tjekke, om noterne passer med det, der blev sagt.** Transskriptionen er delt op i bidder på fem minutter, og hver bid starter med et tidsstempel, fx `===== CHUNK 3 | 00:10:00 -> 00:15:00 =====`. Tilføj denne linje til instruktionen: "Skriv ved hvert emne, hvilken CHUNK det stammer fra." Så kan du spole hen til det rigtige sted i optagelsen og lytte efter.
+
+**AI'en springer emner over eller bliver upræcis mod slutningen.** Det sker, når transskriptionen er for lang til én samtale. En optagelse på tre timer er typisk 20.000–30.000 ord. Del `output.txt` op ved CHUNK-overskrifterne, fx én time ad gangen, og send hver del som sin egen besked med samme instruktion. Bed til sidst om én samlet oversigt over alle delene.
+
+**Noterne og slides siger ikke det samme.** Whisper hører af og til forkert, så fejlen sidder oftest i transskriptionen, ikke på slides. Find stedet via tidsstemplet, lyt til optagelsen, og ret noterne efter det, der faktisk blev sagt.
+
+**Du vil have mere end noter.** Når noterne er, som de skal være, kan du i samme samtale bede om fx et resumé på én side, flashcards med spørgsmål og svar til repetition, eller øvelsesspørgsmål i eksamensstil. AI'en har allerede hele materialet.
+
+**Du har flere optagelser i samme fag.** Vedhæft noterne fra sidste gang sammen med den nye transskription og de nye slides. Bed AI'en pege på, hvor de nye emner bygger videre på de gamle, så noterne hænger sammen på tværs af gangene.
 
 ## Hvor filerne ligger
 
